@@ -285,6 +285,79 @@ app.delete("/estilos/:id", async (req, res) => {
   }
 });
 
+// 🔹 Adicionar imagem (POST)
+app.post("/imagens", async (req, res) => {
+  console.log("Rota POST /imagens solicitada");
+  
+  try {
+    const { link_imagem } = req.body;
+    
+    // Validação
+    if (!link_imagem) {
+      return res.status(400).json({ 
+        erro: "Campo obrigatório", 
+        mensagem: "O link da imagem é obrigatório" 
+      });
+    }
+
+    const db = conectarBD();
+    
+    const consulta = "INSERT INTO imagens (link_imagem) VALUES ($1) RETURNING *";
+    const resultado = await db.query(consulta, [link_imagem]);
+    
+    res.status(201).json({ 
+      mensagem: "Imagem adicionada com sucesso!", 
+      imagem: resultado.rows[0] 
+    });
+    
+  } catch (e) {
+    console.error("Erro ao adicionar imagem:", e);
+    res.status(500).json({ erro: "Erro interno do servidor" });
+  }
+});
+
+// 🔹 Listar todas as imagens (GET)
+app.get("/imagens", async (req, res) => {
+  console.log("Rota GET /imagens solicitada");
+  
+  try {
+    const db = conectarBD();
+    const resultado = await db.query("SELECT * FROM imagens ORDER BY id DESC");
+    res.json(resultado.rows);
+  } catch (e) {
+    console.error("Erro ao buscar imagens:", e);
+    res.status(500).json({ erro: "Erro interno do servidor" });
+  }
+});
+
+// 🔹 Deletar imagem (DELETE)
+app.delete("/imagens/:id", async (req, res) => {
+  console.log("Rota DELETE /imagens/:id solicitada");
+  
+  try {
+    const { id } = req.params;
+    const db = conectarBD();
+    
+    // Verifica se existe
+    let consulta = "SELECT * FROM imagens WHERE id = $1";
+    let resultado = await db.query(consulta, [id]);
+    
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ mensagem: "Imagem não encontrada" });
+    }
+    
+    // Deleta
+    consulta = "DELETE FROM imagens WHERE id = $1";
+    await db.query(consulta, [id]);
+    
+    res.json({ mensagem: "Imagem removida com sucesso!" });
+  } catch (e) {
+    console.error("Erro ao deletar imagem:", e);
+    res.status(500).json({ erro: "Erro interno do servidor" });
+  }
+});
+
+
 
 app.listen(port, () => {            // Um socket para "escutar" as requisições
   console.log(`Serviço rodando na porta:  ${port}`);
